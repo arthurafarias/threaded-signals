@@ -49,23 +49,42 @@ int main(int argc, char* argv[])
     /**
      * 
      */
-    std::promise<std::string> p;
-    auto f = p.get_future();
+    auto p0 = std::promise<std::string>();
+    auto p1 = std::promise<std::string>();
+
+    auto f0 = p0.get_future();
+    auto f1 = p1.get_future();
 
     auto object = std::make_shared<example>();
+    auto output_lock = std::mutex();
 
-    object->on_data_received += [&p](std::shared_ptr<example> sender, std::string data){
-        std::cout << data << std::endl;
-        p.set_value(data);
+    object->on_data_received += [&p0, &output_lock](std::shared_ptr<example> sender, std::string data){
+        std::unique_lock<std::mutex> lk(output_lock);
+        std::cout << "First listener: " << data << std::endl;
+        p0.set_value(data);
+    };
+
+    object->on_data_received += [&p1, &output_lock](std::shared_ptr<example> sender, std::string data){
+        std::unique_lock<std::mutex> lk(output_lock);
+        std::cout << "Second listener: " << data << std::endl;
+        p1.set_value(data);
     };
 
     object->on_data_received(object, "Hello World");
 
-    f.wait();
-    auto result = f.get();
+    f0.wait();
+    f1.wait();
 
-    if (result == "Hello World") {
-        std::cout << "Success" << std::endl;
+    auto result0 = f0.get();
+    auto result1 = f1.get();
+
+    if (result0 == "Hello World") {
+        std::cout << "Success from First Listener" << std::endl;
+    }
+
+    if (result1
+         == "Hello World") {
+        std::cout << "Success from Second Listener" << std::endl;
     }
 
     return 0;
