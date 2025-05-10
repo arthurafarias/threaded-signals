@@ -99,7 +99,7 @@
  protected:
      std::mutex _mutex;
      std::list<slot_type> sinks;
-     thread_pool _thread_pool;
+     thread_pool& _thread_pool = thread_pool::get_instance();
  };
 
  #endif

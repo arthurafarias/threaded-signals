@@ -52,6 +52,11 @@ struct thread_pool
     _q_cond.notify_one();
   }
 
+  static thread_pool& get_instance()
+  {
+    return __thread_pool;
+  }
+
   thread_pool(int hardware_concurrency = std::thread::hardware_concurrency())
   {
     /** push task evaluator (task_launcher in the thread pool) */
@@ -75,6 +80,7 @@ struct thread_pool
   }
 
 protected:
+
   void task_launcher()
   {
     while (!_stop)
@@ -113,11 +119,18 @@ protected:
   }
 
 private:
+  static thread_pool __thread_pool;
   std::queue<std::function<void()>> _q;
   std::condition_variable _q_cond;
   std::vector<std::thread> _pool;
   std::mutex _mutex;
   std::atomic_bool _stop = false;
 };
+
+
+#ifndef _thread_pool_singleton_instance_
+#define _thread_pool_singleton_instance_
+thread_pool thread_pool::__thread_pool = {};
+#endif
 
 #endif
