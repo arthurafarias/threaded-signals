@@ -67,6 +67,12 @@
          std::lock_guard<std::mutex> lock(_mutex);
          sinks.remove(slot);
      }
+
+     void disconnect_all()
+     {
+        std::lock_guard<std::mutex> lock(_mutex);
+        sinks.clear();
+     }
  
      void operator()(sender_type sender, args_types... args)
      {
@@ -96,5 +102,4 @@
      thread_pool _thread_pool;
  };
 
- 
  #endif

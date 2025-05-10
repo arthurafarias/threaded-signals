@@ -82,9 +82,31 @@ int main(int argc, char* argv[])
         std::cout << "Success from First Listener" << std::endl;
     }
 
-    if (result1
-         == "Hello World") {
+    if (result1 == "Hello World") {
         std::cout << "Success from Second Listener" << std::endl;
+    }
+
+    object->on_data_received.disconnect_all();
+
+    auto promises = std::list<std::promise<std::string>>(32);
+    auto results = std::list<std::future<std::string>>();
+
+    for (auto& promise : promises) {
+        auto future = promise.get_future();
+        results.push_back(std::move(future));
+        object->on_data_received += [&promise, &output_lock](std::shared_ptr<example> sender, std::string data){
+            std::unique_lock<std::mutex> lk(output_lock);
+            std::cout << "Generated Listener: " << data << std::endl;
+            promise.set_value(data);
+        };
+    }
+
+    object->on_data_received(object, "Hello World");
+
+    for (auto& future : results)
+    {
+        future.wait();
+        std::cout << future.get() << std::endl;
     }
 
     return 0;
